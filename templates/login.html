@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <h2>Connexion client</h2>
+    <p>Accédez à votre espace pour finaliser vos commandes.</p>
+    <form method="post">
+      <label>Nom d'utilisateur</label>
+      <input type="text" name="username" required>
+      <label>Mot de passe</label>
+      <input type="password" name="password" required>
+      <button class="cta" type="submit">Se connecter</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

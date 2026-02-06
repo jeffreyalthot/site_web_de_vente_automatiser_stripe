@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <h2>Accès administrateur</h2>
+    <p>Connectez-vous avec les identifiants définis dans config.conf.</p>
+    <form method="post">
+      <label>Nom d'utilisateur admin</label>
+      <input type="text" name="username" required>
+      <label>Mot de passe</label>
+      <input type="password" name="password" required>
+      <button class="cta" type="submit">Accéder au panel</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

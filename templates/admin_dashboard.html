@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="dashboard">
+  <h1>Panel Administrateur</h1>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h4>Ventes semaine</h4>
+      <p>${{ '%.2f'|format(weekly_total) }}</p>
+    </div>
+    <div class="stat-card">
+      <h4>Ventes mois</h4>
+      <p>${{ '%.2f'|format(monthly_total) }}</p>
+    </div>
+    <div class="stat-card">
+      <h4>Ventes année</h4>
+      <p>${{ '%.2f'|format(yearly_total) }}</p>
+    </div>
+    <div class="stat-card">
+      <h4>Moyenne/jour (30j)</h4>
+      <p>${{ '%.2f'|format(avg_daily) }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="admin-section">
+  <div class="admin-card">
+    <h2>Ajouter un article</h2>
+    <form method="post" action="{{ url_for('admin_add_product') }}">
+      <label>Nom</label>
+      <input type="text" name="name" required>
+      <label>Catégorie</label>
+      <input type="text" name="category" required>
+      <label>Description</label>
+      <textarea name="description" rows="3"></textarea>
+      <label>Prix</label>
+      <input type="number" step="0.01" name="price" required>
+      <label>Stock</label>
+      <input type="number" name="stock" required>
+      <label>URL image</label>
+      <input type="text" name="image_url" placeholder="https://">
+      <button class="cta" type="submit">Ajouter</button>
+    </form>
+  </div>
+
+  <div class="admin-card">
+    <h2>Stock & Prix</h2>
+    {% if products %}
+      <div class="stock-list">
+        {% for product in products %}
+          <form class="stock-item" method="post" action="{{ url_for('admin_update_stock', product_id=product['id']) }}">
+            <div>
+              <h4>{{ product['name'] }}</h4>
+              <p>{{ product['category'] }}</p>
+            </div>
+            <input type="number" name="stock" value="{{ product['stock'] }}" min="0">
+            <input type="number" step="0.01" name="price" value="{{ product['price'] }}">
+            <button class="ghost" type="submit">Mettre à jour</button>
+          </form>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Aucun article pour le moment.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="admin-section">
+  <div class="admin-card full">
+    <h2>Commandes en cours</h2>
+    {% if orders %}
+      <div class="orders-table">
+        <div class="orders-header">
+          <span>Client</span>
+          <span>Adresse</span>
+          <span>Montant</span>
+          <span>Stripe</span>
+          <span>Date</span>
+        </div>
+        {% for order in orders %}
+          <div class="orders-row">
+            <span>{{ order['customer_name'] }}</span>
+            <span>{{ order['customer_address'] }}</span>
+            <span>${{ '%.2f'|format(order['total']) }}</span>
+            <span>{{ order['stripe_payment_id'] }}</span>
+            <span>{{ order['created_at'][:10] }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Aucune commande payée.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

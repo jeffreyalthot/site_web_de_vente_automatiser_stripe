@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title or "Boutique Nova" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo">Boutique <span>Nova</span></div>
+    <nav>
+      <a href="{{ url_for('index') }}">Accueil</a>
+      <a href="{{ url_for('cart') }}">Panier ({{ cart_count }})</a>
+      {% if session.get('user_id') %}
+        <a href="{{ url_for('logout') }}">Déconnexion</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+        <a class="pill" href="{{ url_for('register') }}">Register</a>
+      {% endif %}
+      <a class="pill" href="{{ url_for('admin_login') }}">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>Une expérience e-commerce premium, sécurisée par Stripe.</p>
+  </footer>
+
+  <script>
+    const modal = document.querySelector('.modal');
+    const confirmBtn = document.querySelector('.confirm-trigger');
+    const closeBtn = document.querySelector('.modal-close');
+    if (confirmBtn && modal) {
+      confirmBtn.addEventListener('click', () => modal.classList.add('open'));
+    }
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', () => modal.classList.remove('open'));
+    }
+  </script>
+</body>
+</html>

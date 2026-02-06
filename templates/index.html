@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <div>
+    <h1>Découvrez nos collections premium</h1>
+    <p>Une boutique en ligne élégante, des produits triés par catégorie et une expérience d'achat fluide.</p>
+    <a class="cta" href="{{ url_for('register') }}">Créer un compte</a>
+  </div>
+  <div class="hero-card">
+    <h3>Livraison rapide</h3>
+    <p>Gratuite dès 100$ d'achat et suivi en temps réel.</p>
+    <div class="hero-badge">Stripe Ready</div>
+  </div>
+</section>
+
+{% if grouped %}
+  {% for category, products in grouped.items() %}
+    <section class="category-section">
+      <div class="section-header">
+        <h2>{{ category }}</h2>
+        <span>{{ products|length }} articles</span>
+      </div>
+      <div class="product-grid">
+        {% for product in products %}
+          <a class="product-card" href="{{ url_for('product_detail', product_id=product['id']) }}">
+            <img src="{{ product['image_url'] or 'https://images.unsplash.com/photo-1490367532201-b9bc1dc483f6?auto=format&fit=crop&w=800&q=80' }}" alt="{{ product['name'] }}">
+            <div class="product-info">
+              <h3>{{ product['name'] }}</h3>
+              <p>{{ product['description'] or 'Une description raffinée pour mettre en valeur le produit.' }}</p>
+              <div class="price">${{ '%.2f'|format(product['price']) }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="empty-state">
+    <h2>Ajoutez vos premiers articles depuis le panel admin.</h2>
+    <p>Votre catalogue s'affichera ici avec un design en grille.</p>
+  </section>
+{% endif %}
+{% endblock %}
