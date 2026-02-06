@@ -73,7 +73,10 @@
     <div>
       <h1>Découvrez nos collections premium</h1>
       <p>Une boutique en ligne élégante, des produits triés par catégorie et une expérience d'achat fluide.</p>
-      <a class="cta" href="{{ url_for('register') }}">Créer un compte</a>
+      <div class="hero-actions">
+        <a class="cta" href="{{ url_for('register') }}">Créer un compte</a>
+        <a class="ghost" href="{{ url_for('index', tab='catalogue') }}">Voir le catalogue</a>
+      </div>
     </div>
     <div class="hero-card">
       <h3>Livraison rapide</h3>
