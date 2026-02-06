@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="product-detail">
+  <div class="product-media">
+    <img src="{{ product['image_url'] or 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80' }}" alt="{{ product['name'] }}">
+  </div>
+  <div class="product-description">
+    <span class="tag">{{ product['category'] }}</span>
+    <h1>{{ product['name'] }}</h1>
+    <p>{{ product['description'] or 'Un produit sélectionné pour sublimer votre quotidien.' }}</p>
+    <div class="price">${{ '%.2f'|format(product['price']) }}</div>
+    <form method="post" action="{{ url_for('add_to_cart', product_id=product['id']) }}">
+      <button class="cta" type="submit">Ajouter au panier</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

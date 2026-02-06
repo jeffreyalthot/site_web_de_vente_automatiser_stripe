@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="cart-page">
+  <div class="cart-items">
+    <h2>Votre panier</h2>
+    {% if products %}
+      <div class="cart-list">
+        {% for entry in products %}
+          <div class="cart-item">
+            <form method="post" action="{{ url_for('remove_from_cart', product_id=entry.product['id']) }}">
+              <button class="remove-btn" type="submit">✕</button>
+            </form>
+            <img src="{{ entry.product['image_url'] or 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80' }}" alt="{{ entry.product['name'] }}">
+            <div>
+              <h4>{{ entry.product['name'] }}</h4>
+              <p>{{ entry.product['category'] }}</p>
+            </div>
+            <div class="quantity">x{{ entry.quantity }}</div>
+            <div class="line-total">${{ '%.2f'|format(entry.line_total) }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Votre panier est vide.</p>
+    {% endif %}
+  </div>
+
+  <div class="invoice">
+    <h3>Facture</h3>
+    <div class="invoice-row">
+      <span>Sous-total</span>
+      <strong>${{ '%.2f'|format(subtotal) }}</strong>
+    </div>
+    <div class="invoice-row">
+      <span>Livraison</span>
+      <strong>{% if shipping == 0 and subtotal > 0 %}Gratuite{% else %}${{ '%.2f'|format(shipping) }}{% endif %}</strong>
+    </div>
+    <div class="invoice-row total">
+      <span>Total</span>
+      <strong>${{ '%.2f'|format(total) }}</strong>
+    </div>
+    <div class="invoice-row">
+      <span>Quantité</span>
+      <strong>{{ products|map(attribute='quantity')|sum }}</strong>
+    </div>
+
+    <form class="checkout-form" method="post" action="{{ url_for('checkout') }}">
+      <label>Nom complet</label>
+      <input type="text" name="customer_name" placeholder="Votre nom" required>
+      <label>Adresse complète</label>
+      <textarea name="customer_address" rows="3" placeholder="Adresse, code postal, ville" required></textarea>
+      <label>Infos carte</label>
+      <div class="card-grid">
+        <input type="text" name="card_number" placeholder="Numéro de carte" required>
+        <input type="text" name="card_exp" placeholder="Date exp." required>
+        <input type="text" name="card_cvv" placeholder="CVV" required>
+      </div>
+      <input type="hidden" name="payment_ref" value="STRIPE-DEMO-{{ '%d'|format(products|length) }}">
+      <button class="cta confirm-trigger" type="button" {% if not products %}disabled{% endif %}>Valider</button>
+      <div class="modal">
+        <div class="modal-content">
+          <h4>Confirmer votre achat</h4>
+          <p>Souhaitez-vous confirmer la commande et lancer le paiement Stripe ?</p>
+          <div class="modal-actions">
+            <button class="ghost modal-close" type="button">Annuler</button>
+            <button class="cta" type="submit">Confirmer</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
