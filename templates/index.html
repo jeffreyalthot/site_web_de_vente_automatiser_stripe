@@ -6,10 +6,19 @@
 </div>
 
 <section class="tab-panel" id="tab-catalogue">
-  <div class="catalogue-header">
+  <div class="banner catalogue-banner">
     <div>
       <h1>Catalogue</h1>
       <p>Explorez nos articles disponibles en grille 8x4.</p>
+      <div class="hero-actions">
+        <a class="cta" href="{{ url_for('register') }}">Offres personnalisées</a>
+        <a class="ghost" href="{{ url_for('index', tab='accueil') }}">Voir l'accueil</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <h3>Tendances e-commerce</h3>
+      <p>Produits populaires, lots exclusifs et livraisons rapides.</p>
+      <div class="hero-badge">Sélection du moment</div>
     </div>
   </div>
 
@@ -69,7 +78,7 @@
 </section>
 
 <section class="tab-panel" id="tab-accueil">
-  <section class="hero">
+  <section class="hero banner">
     <div>
       <h1>Découvrez nos collections premium</h1>
       <p>Une boutique en ligne élégante, des produits triés par catégorie et une expérience d'achat fluide.</p>
