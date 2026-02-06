@@ -13,15 +13,15 @@
   <header class="site-header">
     <div class="logo">Boutique <span>Nova</span></div>
     <nav>
-      <a href="{{ url_for('index') }}">Accueil</a>
-      <a href="{{ url_for('cart') }}">Panier ({{ cart_count }})</a>
+      <a class="nav-link" href="{{ url_for('index') }}">Accueil</a>
+      <a class="nav-link" href="{{ url_for('cart') }}">Panier ({{ cart_count }})</a>
       {% if session.get('user_id') %}
-        <a href="{{ url_for('logout') }}">Déconnexion</a>
+        <a class="nav-link" href="{{ url_for('logout') }}">Déconnexion</a>
       {% else %}
-        <a href="{{ url_for('login') }}">Login</a>
-        <a class="pill" href="{{ url_for('register') }}">Register</a>
+        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+        <a class="nav-link pill" href="{{ url_for('register') }}">Register</a>
       {% endif %}
-      <a class="pill" href="{{ url_for('admin_login') }}">Admin</a>
+      <a class="nav-link pill" href="{{ url_for('admin_login') }}">Admin</a>
     </nav>
   </header>
 
