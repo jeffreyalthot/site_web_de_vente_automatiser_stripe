@@ -10,7 +10,11 @@
             <form method="post" action="{{ url_for('remove_from_cart', product_id=entry.product['id']) }}">
               <button class="remove-btn" type="submit">✕</button>
             </form>
-            <img src="{{ entry.product['image_url'] or 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80' }}" alt="{{ entry.product['name'] }}">
+            {% set image_src = entry.product['image_url'] %}
+            {% if image_src and not image_src.startswith('http') %}
+              {% set image_src = url_for('static', filename=image_src) %}
+            {% endif %}
+            <img src="{{ image_src or 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80' }}" alt="{{ entry.product['name'] }}">
             <div>
               <h4>{{ entry.product['name'] }}</h4>
               <p>{{ entry.product['category'] }}</p>

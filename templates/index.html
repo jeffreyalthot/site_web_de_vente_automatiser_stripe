@@ -1,43 +1,135 @@
 {% extends 'base.html' %}
 {% block content %}
-<section class="hero">
-  <div>
-    <h1>Découvrez nos collections premium</h1>
-    <p>Une boutique en ligne élégante, des produits triés par catégorie et une expérience d'achat fluide.</p>
-    <a class="cta" href="{{ url_for('register') }}">Créer un compte</a>
-  </div>
-  <div class="hero-card">
-    <h3>Livraison rapide</h3>
-    <p>Gratuite dès 100$ d'achat et suivi en temps réel.</p>
-    <div class="hero-badge">Stripe Ready</div>
-  </div>
-</section>
+<div class="tab-bar" data-active="{{ active_tab }}">
+  <button class="tab-btn" data-tab="catalogue">Catalogue</button>
+  <button class="tab-btn" data-tab="accueil">Accueil</button>
+</div>
 
-{% if grouped %}
-  {% for category, products in grouped.items() %}
-    <section class="category-section">
-      <div class="section-header">
-        <h2>{{ category }}</h2>
-        <span>{{ products|length }} articles</span>
-      </div>
-      <div class="product-grid">
-        {% for product in products %}
-          <a class="product-card" href="{{ url_for('product_detail', product_id=product['id']) }}">
-            <img src="{{ product['image_url'] or 'https://images.unsplash.com/photo-1490367532201-b9bc1dc483f6?auto=format&fit=crop&w=800&q=80' }}" alt="{{ product['name'] }}">
-            <div class="product-info">
-              <h3>{{ product['name'] }}</h3>
-              <p>{{ product['description'] or 'Une description raffinée pour mettre en valeur le produit.' }}</p>
-              <div class="price">${{ '%.2f'|format(product['price']) }}</div>
-            </div>
-          </a>
+<section class="tab-panel" id="tab-catalogue">
+  <div class="catalogue-header">
+    <div>
+      <h1>Catalogue</h1>
+      <p>Explorez nos articles disponibles en grille 8x4.</p>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <span>Couleur</span>
+      <div class="filter-buttons">
+        <a class="filter-btn {{ 'active' if selected_color == 'all' }}" href="{{ url_for('index', tab='catalogue', size=selected_size, category=selected_category, color='all') }}">Tout</a>
+        {% for color in colors %}
+          <a class="filter-btn {{ 'active' if selected_color == color }}" href="{{ url_for('index', tab='catalogue', size=selected_size, category=selected_category, color=color) }}">{{ color }}</a>
         {% endfor %}
       </div>
+    </div>
+    <div class="filter-group">
+      <span>Taille</span>
+      <div class="filter-buttons">
+        <a class="filter-btn {{ 'active' if selected_size == 'all' }}" href="{{ url_for('index', tab='catalogue', color=selected_color, category=selected_category, size='all') }}">Tout</a>
+        {% for size in sizes %}
+          <a class="filter-btn {{ 'active' if selected_size == size }}" href="{{ url_for('index', tab='catalogue', color=selected_color, category=selected_category, size=size) }}">{{ size }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="filter-group">
+      <span>Catégorie</span>
+      <div class="filter-buttons">
+        <a class="filter-btn {{ 'active' if selected_category == 'all' }}" href="{{ url_for('index', tab='catalogue', color=selected_color, size=selected_size, category='all') }}">Tout</a>
+        {% for category in categories %}
+          <a class="filter-btn {{ 'active' if selected_category == category }}" href="{{ url_for('index', tab='catalogue', color=selected_color, size=selected_size, category=category) }}">{{ category }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if catalogue_products %}
+    <div class="product-grid catalogue-grid">
+      {% for product in catalogue_products[:32] %}
+        <a class="product-card" href="{{ url_for('product_detail', product_id=product['id'], tab='catalogue') }}">
+          {% set image_src = product['image_url'] %}
+          {% if image_src and not image_src.startswith('http') %}
+            {% set image_src = url_for('static', filename=image_src) %}
+          {% endif %}
+          <img src="{{ image_src or 'https://images.unsplash.com/photo-1490367532201-b9bc1dc483f6?auto=format&fit=crop&w=800&q=80' }}" alt="{{ product['name'] }}">
+          <div class="product-info">
+            <h3>{{ product['name'] }}</h3>
+            <p>{{ product['description'] or 'Une description raffinée pour mettre en valeur le produit.' }}</p>
+            <div class="price">${{ '%.2f'|format(product['price']) }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <section class="empty-state">
+      <h2>Aucun article listé pour le moment.</h2>
+      <p>Ajoutez des articles dans le panel admin puis activez le listing.</p>
     </section>
-  {% endfor %}
-{% else %}
-  <section class="empty-state">
-    <h2>Ajoutez vos premiers articles depuis le panel admin.</h2>
-    <p>Votre catalogue s'affichera ici avec un design en grille.</p>
+  {% endif %}
+</section>
+
+<section class="tab-panel" id="tab-accueil">
+  <section class="hero">
+    <div>
+      <h1>Découvrez nos collections premium</h1>
+      <p>Une boutique en ligne élégante, des produits triés par catégorie et une expérience d'achat fluide.</p>
+      <a class="cta" href="{{ url_for('register') }}">Créer un compte</a>
+    </div>
+    <div class="hero-card">
+      <h3>Livraison rapide</h3>
+      <p>Gratuite dès 100$ d'achat et suivi en temps réel.</p>
+      <div class="hero-badge">Stripe Ready</div>
+    </div>
   </section>
-{% endif %}
+
+  {% if grouped %}
+    {% for category, products in grouped.items() %}
+      <section class="category-section">
+        <div class="section-header">
+          <h2>{{ category }}</h2>
+          <span>{{ products|length }} articles</span>
+        </div>
+        <div class="product-grid">
+          {% for product in products %}
+            <a class="product-card" href="{{ url_for('product_detail', product_id=product['id']) }}">
+              {% set image_src = product['image_url'] %}
+              {% if image_src and not image_src.startswith('http') %}
+                {% set image_src = url_for('static', filename=image_src) %}
+              {% endif %}
+              <img src="{{ image_src or 'https://images.unsplash.com/photo-1490367532201-b9bc1dc483f6?auto=format&fit=crop&w=800&q=80' }}" alt="{{ product['name'] }}">
+              <div class="product-info">
+                <h3>{{ product['name'] }}</h3>
+                <p>{{ product['description'] or 'Une description raffinée pour mettre en valeur le produit.' }}</p>
+                <div class="price">${{ '%.2f'|format(product['price']) }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  {% else %}
+    <section class="empty-state">
+      <h2>Ajoutez vos premiers articles depuis le panel admin.</h2>
+      <p>Votre catalogue s'affichera ici avec un design en grille.</p>
+    </section>
+  {% endif %}
+</section>
+<script>
+  const tabBar = document.querySelector('.tab-bar');
+  if (tabBar) {
+    const activeTab = tabBar.dataset.active || 'catalogue';
+    const buttons = tabBar.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('.tab-panel');
+    const setActive = (tab) => {
+      buttons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+      panels.forEach((panel) => panel.classList.toggle('active', panel.id === `tab-${tab}`));
+    };
+    setActive(activeTab);
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setActive(btn.dataset.tab);
+      });
+    });
+  }
+</script>
 {% endblock %}
