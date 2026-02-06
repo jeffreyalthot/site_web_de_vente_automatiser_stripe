@@ -6,13 +6,17 @@ from configparser import ConfigParser
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "store.db")
 CONFIG_PATH = os.path.join(BASE_DIR, "config.conf")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-me"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 def load_config():
@@ -22,6 +26,7 @@ def load_config():
 
 
 def init_db():
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute(
@@ -42,7 +47,20 @@ def init_db():
                 description TEXT,
                 price REAL NOT NULL,
                 stock INTEGER NOT NULL,
-                image_url TEXT
+                image_url TEXT,
+                color TEXT,
+                size TEXT,
+                listed INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS product_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER NOT NULL,
+                image_url TEXT NOT NULL,
+                FOREIGN KEY(product_id) REFERENCES products(id)
             )
             """
         )
@@ -72,6 +90,15 @@ def init_db():
             )
             """
         )
+        columns = {
+            row[1] for row in cur.execute("PRAGMA table_info(products)").fetchall()
+        }
+        if "color" not in columns:
+            cur.execute("ALTER TABLE products ADD COLUMN color TEXT")
+        if "size" not in columns:
+            cur.execute("ALTER TABLE products ADD COLUMN size TEXT")
+        if "listed" not in columns:
+            cur.execute("ALTER TABLE products ADD COLUMN listed INTEGER NOT NULL DEFAULT 0")
         conn.commit()
 
 
@@ -101,6 +128,10 @@ def admin_required(view):
     return wrapper
 
 
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 @app.context_processor
 def inject_cart():
     cart = session.get("cart", {})
@@ -109,25 +140,75 @@ def inject_cart():
 
 @app.route("/")
 def index():
+    selected_color = request.args.get("color") or "all"
+    selected_size = request.args.get("size") or "all"
+    selected_category = request.args.get("category") or "all"
     conn = get_db_connection()
-    products = conn.execute("SELECT * FROM products ORDER BY id DESC").fetchall()
+    listed_products = conn.execute(
+        "SELECT * FROM products WHERE listed = 1 ORDER BY id DESC"
+    ).fetchall()
+    filter_query = "SELECT * FROM products WHERE listed = 1"
+    params = []
+    if selected_color != "all":
+        filter_query += " AND color = ?"
+        params.append(selected_color)
+    if selected_size != "all":
+        filter_query += " AND size = ?"
+        params.append(selected_size)
+    if selected_category != "all":
+        filter_query += " AND category = ?"
+        params.append(selected_category)
+    filter_query += " ORDER BY id DESC"
+    filtered_products = conn.execute(filter_query, params).fetchall()
+    colors = [
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT color FROM products WHERE listed = 1 AND color IS NOT NULL AND color != ''"
+        ).fetchall()
+    ]
+    sizes = [
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT size FROM products WHERE listed = 1 AND size IS NOT NULL AND size != ''"
+        ).fetchall()
+    ]
+    categories = [
+        row[0]
+        for row in conn.execute(
+            "SELECT DISTINCT category FROM products WHERE listed = 1 ORDER BY category"
+        ).fetchall()
+    ]
     conn.close()
-    categories = sorted({product["category"] for product in products})
     grouped = {category: [] for category in categories}
-    for product in products:
+    for product in listed_products:
         grouped[product["category"]].append(product)
-    return render_template("index.html", grouped=grouped)
+    return render_template(
+        "index.html",
+        grouped=grouped,
+        catalogue_products=filtered_products,
+        colors=sorted(colors),
+        sizes=sorted(sizes),
+        categories=categories,
+        selected_color=selected_color,
+        selected_size=selected_size,
+        selected_category=selected_category,
+        active_tab=request.args.get("tab", "catalogue"),
+    )
 
 
 @app.route("/product/<int:product_id>")
 def product_detail(product_id):
     conn = get_db_connection()
     product = conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+    images = conn.execute(
+        "SELECT image_url FROM product_images WHERE product_id = ? ORDER BY id ASC",
+        (product_id,),
+    ).fetchall()
     conn.close()
     if not product:
         flash("Produit introuvable", "error")
         return redirect(url_for("index"))
-    return render_template("product.html", product=product)
+    return render_template("product.html", product=product, images=images)
 
 
 @app.route("/cart")
@@ -160,8 +241,12 @@ def cart():
 @app.route("/add-to-cart/<int:product_id>", methods=["POST"])
 def add_to_cart(product_id):
     cart_items = session.get("cart", {})
+    try:
+        requested_qty = int(request.form.get("quantity", 1))
+    except (TypeError, ValueError):
+        requested_qty = 1
     current_qty = cart_items.get(str(product_id), 0)
-    cart_items[str(product_id)] = current_qty + 1
+    cart_items[str(product_id)] = current_qty + max(requested_qty, 1)
     session["cart"] = cart_items
     flash("Article ajouté au panier.", "success")
     return redirect(url_for("cart"))
@@ -342,28 +427,56 @@ def admin_dashboard():
     )
 
 
+@app.route("/admin/products/new")
+@admin_required
+def admin_new_product():
+    return render_template("admin_add_product.html")
+
+
 @app.route("/admin/products", methods=["POST"])
 @admin_required
 def admin_add_product():
     name = request.form.get("name")
     category = request.form.get("category")
+    color = request.form.get("color")
+    size = request.form.get("size")
     description = request.form.get("description")
     price = request.form.get("price")
     stock = request.form.get("stock")
-    image_url = request.form.get("image_url")
+    images = request.files.getlist("images")
 
     if not all([name, category, price, stock]):
         flash("Merci de remplir les champs obligatoires.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("admin_new_product"))
 
     conn = get_db_connection()
-    conn.execute(
+    cursor = conn.cursor()
+    cursor.execute(
         """
-        INSERT INTO products (name, category, description, price, stock, image_url)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO products (name, category, description, price, stock, image_url, color, size, listed)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (name, category, description, float(price), int(stock), image_url),
+        (name, category, description, float(price), int(stock), None, color, size, 0),
     )
+    product_id = cursor.lastrowid
+    saved_images = []
+    for image in images[:4]:
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            unique_name = f"{product_id}_{datetime.utcnow().timestamp()}_{filename}"
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
+            image.save(file_path)
+            stored_path = f"uploads/{unique_name}"
+            saved_images.append(stored_path)
+            cursor.execute(
+                "INSERT INTO product_images (product_id, image_url) VALUES (?, ?)",
+                (product_id, stored_path),
+            )
+    if saved_images:
+        cursor.execute(
+            "UPDATE products SET image_url = ? WHERE id = ?",
+            (saved_images[0], product_id),
+        )
     conn.commit()
     conn.close()
 
@@ -384,6 +497,22 @@ def admin_update_stock(product_id):
     conn.commit()
     conn.close()
     flash("Stock et prix mis à jour.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/products/<int:product_id>/toggle-listing", methods=["POST"])
+@admin_required
+def admin_toggle_listing(product_id):
+    conn = get_db_connection()
+    current = conn.execute(
+        "SELECT listed FROM products WHERE id = ?", (product_id,)
+    ).fetchone()
+    if current:
+        new_state = 0 if current["listed"] else 1
+        conn.execute("UPDATE products SET listed = ? WHERE id = ?", (new_state, product_id))
+        conn.commit()
+    conn.close()
+    flash("Statut de mise en vente mis à jour.", "success")
     return redirect(url_for("admin_dashboard"))
 
 

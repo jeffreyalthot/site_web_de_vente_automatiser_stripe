@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="admin-form-header">
+  <a class="back-link" href="{{ url_for('admin_dashboard') }}">← Retour</a>
+  <h1>Ajouter un article</h1>
+</section>
+
+<section class="admin-section single">
+  <div class="admin-card full">
+    <form method="post" action="{{ url_for('admin_add_product') }}" enctype="multipart/form-data">
+      <label>Nom</label>
+      <input type="text" name="name" required>
+      <label>Catégorie</label>
+      <input type="text" name="category" required>
+      <label>Couleur</label>
+      <input type="text" name="color" placeholder="Noir, Blanc...">
+      <label>Taille</label>
+      <input type="text" name="size" placeholder="S, M, L...">
+      <label>Description</label>
+      <textarea name="description" rows="3"></textarea>
+      <label>Prix</label>
+      <input type="number" step="0.01" name="price" required>
+      <label>Stock</label>
+      <input type="number" name="stock" required min="0">
+      <label>Images (4 max)</label>
+      <input type="file" name="images" accept="image/*" multiple>
+      <button class="cta" type="submit">Ajouter</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
